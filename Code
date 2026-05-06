@@ -1,0 +1,53 @@
+import bpy
+from mathutils import Vector
+
+#armature = bpy.data.objects["Armature"]
+#ik_bone = armature.pose.bones["IK_Bone"]
+#target = bpy.data.objects["Target"]
+
+#print(f'Ikbone originally = {ik_bone.location}')
+
+
+#Rotation
+#bpy.context.view_layer.objects.active = armature
+#bpy.ops.object.mode_set(mode='POSE')
+
+#helper = bpy.data.objects.new("Helper", None)
+#bpy.context.collection.objects.link(helper)
+
+
+#Tracking constraint
+#c_rotation = ik_bone.constraints.new(type='DAMPED_TRACK')
+#c_rotation.target = target
+#c_rotation.track_axis = 'TRACK_Y'
+
+#c_helper = helper.constraints.new(type='COPY_LOCATION')
+#c_helper.target = target
+
+#c_pose = ik_bone.constraints.new(type='COPY_LOCATION')
+#c_pose.target = helper
+
+
+
+
+#print(target.location)
+#print(ik_bone.location)
+
+arm = bpy.data.objects["Armature"]
+pbone = arm.pose.bones["IK_Bone"]
+target = bpy.data.objects["Target"]
+
+bone_pos = arm.matrix_world @ pbone.head
+target_pos = target.matrix_world.translation
+
+direction = (target_pos - bone_pos).normalized()
+rot_world = direction.to_track_quat('-Y', 'Z').to_matrix().to_4x4()
+rot_arm = arm.matrix_world.inverted() @ rot_world
+if pbone.parent:
+    rot_parent_space = pbone.parent.matrix.inverted() @ rot_arm
+else:
+    rot_parent_space = rot_arm
+
+rest_inv = pbone.bone.matrix_local.inverted()
+
+pbone.matrix = rot_parent_space @ rest_inv
